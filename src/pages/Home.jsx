@@ -64,30 +64,7 @@ const Home = () => {
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-3">
-                <Clock className="h-8 w-8 text-oncf-light-blue mr-2" />
-                <span className="text-3xl font-bold">99.8%</span>
-              </div>
-              <p className="text-white/80">Disponibilité des Trains</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-3">
-                <Shield className="h-8 w-8 text-oncf-light-blue mr-2" />
-                <span className="text-3xl font-bold">0</span>
-              </div>
-              <p className="text-white/80">Accident Majeur</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-3">
-                <Award className="h-8 w-8 text-oncf-light-blue mr-2" />
-                <span className="text-3xl font-bold">50+</span>
-              </div>
-              <p className="text-white/80">Années d'Excellence</p>
-            </div>
-          </div>
+          
         </div>
       </div>
 
