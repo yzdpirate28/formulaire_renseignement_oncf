@@ -59,15 +59,6 @@ src/
       └── index.jsx
 ```
 
-## Contribuer
-
-Les contributions sont les bienvenues ! Merci de soumettre une demande de tirage (pull request) pour toute amélioration ou correction.
-
-## Auteurs
-
-- **Votre Nom** - Développeur principal - [Votre Profil GitHub](https://github.com/yzdpirate28)
-
-
 ## Licence
 
 Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
