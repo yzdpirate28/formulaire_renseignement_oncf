@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
 function FormSousStation() {
+  const [records, setRecords] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
   const [formData, setFormData] = useState({
     date: '',
     dric: '',
@@ -21,6 +23,14 @@ function FormSousStation() {
     nature_intervention: '',
     consistance_travaux: '',
   });
+
+  useEffect(() => {
+    // Load records from localStorage
+    const storedData = localStorage.getItem('sousStationRecords');
+    if (storedData) {
+      setRecords(JSON.parse(storedData));
+    }
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,6 +60,56 @@ function FormSousStation() {
     }
   };
 
+  const addRecord = () => {
+    if (!formData.date || !formData.dric) {
+      alert('Veuillez remplir au moins la Date et le DRIC');
+      return;
+    }
+
+    const newRecord = {
+      ...formData,
+      id: Date.now(),
+      timestamp: new Date().toLocaleString('fr-FR'),
+      operator: prompt('Nom de l\'opérateur:') || 'Non spécifié'
+    };
+
+    if (editingIndex !== null) {
+      // Update existing record
+      const updatedRecords = [...records];
+      updatedRecords[editingIndex] = newRecord;
+      setRecords(updatedRecords);
+      setEditingIndex(null);
+      alert('Enregistrement mis à jour!');
+    } else {
+      // Add new record
+      setRecords([...records, newRecord]);
+      alert('Enregistrement ajouté!');
+    }
+
+    // Save to localStorage
+    localStorage.setItem('sousStationRecords', JSON.stringify([...records, newRecord]));
+
+    // Reset form
+    resetForm();
+  };
+
+  const editRecord = (index) => {
+    const record = records[index];
+    setFormData(record);
+    setEditingIndex(index);
+    // Scroll to form
+    document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const deleteRecord = (index) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement?')) {
+      const updatedRecords = records.filter((_, i) => i !== index);
+      setRecords(updatedRecords);
+      localStorage.setItem('sousStationRecords', JSON.stringify(updatedRecords));
+      alert('Enregistrement supprimé!');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       date: '',
@@ -68,91 +128,85 @@ function FormSousStation() {
       nature_intervention: '',
       consistance_travaux: '',
     });
+    console.log("Formulaire réinitialisé");
     alert('Formulaire réinitialisé!');
   };
 
-  const saveToExcel = async () => {
+  const clearAllData = () => {
+    if (confirm('Êtes-vous sûr de vouloir effacer tous les enregistrements?')) {
+      setRecords([]);
+      localStorage.removeItem('sousStationRecords');
+      alert('Tous les enregistrements ont été effacés.');
+    }
+  };
+
+  const saveAllToExcel = async () => {
+    if (records.length === 0) {
+      alert('Aucun enregistrement à sauvegarder!');
+      return;
+    }
+
     try {
-      // Create Excel workbook
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Renseignement Sous Station');
-      
-      // Prepare data for table creation
+
       const headers = [
         'Date', 'DRIC', 'District', 'SST/PS', 'Type Intervention', 'Équipements',
         'Chargé Exploitation', 'Doc', 'Heure Entrée', 'Heure Sortie', 'Délai Accès',
-        'Heure Début Travaux', 'Heure Fin Travaux', 'Nature Intervention', 'Consistance Travaux'
+        'Heure Début Travaux', 'Heure Fin Travaux', 'Nature Intervention', 'Consistance Travaux',
+        'Opérateur', 'Date Soumission'
       ];
-      
-      // Add headers
-      worksheet.addRow(headers);
-      
-      // Add data row
-      const row = [
-        formData.date || '',
-        formData.dric || '',
-        formData.district || '',
-        formData.sst_ps || '',
-        formData.type_intervention || '',
-        formData.equipements || '',
-        formData.charge_exploitation || '',
-        formData.doc || '',
-        formData.heure_entree || '',
-        formData.heure_sortie || '',
-        formData.delai_acces || '',
-        formData.heure_debut_travaux || '',
-        formData.heure_fin_travaux || '',
-        formData.nature_intervention || '',
-        formData.consistance_travaux || ''
-      ];
-      worksheet.addRow(row);
 
-      // Create Excel table
-      const lastRow = 2; // Header + 1 data row
-      const lastCol = headers.length;
-      const lastColLetter = String.fromCharCode(64 + lastCol);
-      
+      // Build rows explicitly for the table (array of arrays)
+      const rows = records.map(record => ([
+        record.date || null,
+        record.dric || null,
+        record.district || null,
+        record.sst_ps || null,
+        record.type_intervention || null,
+        record.equipements || null,
+        record.charge_exploitation || null,
+        record.doc || null,
+        record.heure_entree || null,
+        record.heure_sortie || null,
+        record.delai_acces || null,
+        record.heure_debut_travaux || null,
+        record.heure_fin_travaux || null,
+        record.nature_intervention || null,
+        record.consistance_travaux || null,
+        record.operator || null,
+        record.timestamp || null
+      ]));
+
+      // Create the table with explicit columns and rows starting at A1
       worksheet.addTable({
         name: 'RenseignementSousStationTable',
-        ref: `A1:${lastColLetter}${lastRow}`,
+        ref: 'A1',
         headerRow: true,
         totalsRow: false,
         style: {
           theme: 'TableStyleMedium9',
           showRowStripes: true,
         },
-        columns: headers.map(header => ({
-          name: header,
-          filterButton: true
-        }))
+        columns: headers.map(header => ({ name: header, filterButton: true })),
+        rows
       });
-      
-      // Set column widths
-      worksheet.columns = headers.map(header => ({
-        width: Math.max(header.length + 2, 15)
-      }));
 
-      // Generate filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      const filename = `Renseignement_SousStation_${timestamp}.xlsx`;
+      // Optional: set column widths
+      worksheet.columns = headers.map(header => ({ width: Math.max(header.length + 2, 15) }));
 
-      // Save file
+      const today = new Date().toISOString().slice(0, 10);
+      const filename = `Renseignement_SousStation_${today}.xlsx`;
+
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-      });
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       saveAs(blob, filename);
 
-      alert('Formulaire sauvegardé en fichier Excel!');
-      resetForm();
+      alert(`Excel sauvegardé! ${records.length} enregistrements exportés.`);
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error('Erreur:', error);
       alert(`Erreur lors de la sauvegarde: ${error.message}`);
     }
-  };
-
-  const saveForm = () => {
-    saveToExcel(); // Save to Excel file instead of Google Sheets
   };
 
   const natureOptions = [
@@ -175,8 +229,14 @@ function FormSousStation() {
           <i className="fas fa-clipboard-list mr-3"></i>
           Formulaire de Renseignement Sous Station
         </h1>
+        <div className="text-center pb-4">
+          <span className="bg-white/20 px-4 py-2 rounded-full text-white">
+            <i className="fas fa-database mr-2"></i>
+            {records.length} enregistrement(s) en cours
+          </span>
+        </div>
       </div>
-      <div className="bg-white rounded-b-2xl shadow-lg p-8">
+      <div id="form-section" className="bg-white rounded-b-2xl shadow-lg p-8">
         <form className="space-y-6">
           <div className="border-l-4 border-orange-500 pl-4 mb-8">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">
@@ -318,17 +378,103 @@ function FormSousStation() {
           </div>
           {/* Boutons d'action */}
           <div className="flex flex-wrap gap-4 pt-8 border-t">
-            <button type="button" onClick={saveForm} className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition duration-200 font-semibold">
-              <i className="fas fa-save mr-2"></i>
-              Enregistrer
+            <button 
+              type="button" 
+              onClick={addRecord} 
+              className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition duration-200 font-semibold"
+            >
+              <i className="fas fa-plus mr-2"></i>
+              {editingIndex !== null ? 'Mettre à jour' : 'Ajouter'}
             </button>
-            <button type="reset" onClick={resetForm} className="flex items-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition duration-200 font-semibold">
+            
+            <button 
+              type="button" 
+              onClick={resetForm} 
+              className="flex items-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition duration-200 font-semibold"
+            >
               <i className="fas fa-undo mr-2"></i>
               Réinitialiser
             </button>
+            
+            <button 
+              type="button" 
+              onClick={saveAllToExcel} 
+              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition duration-200 font-semibold"
+            >
+              <i className="fas fa-file-excel mr-2"></i>
+              Sauvegarder Excel
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={clearAllData} 
+              className="flex items-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 transition duration-200 font-semibold"
+            >
+              <i className="fas fa-trash mr-2"></i>
+              Effacer Tout
+            </button>
           </div>
         </form>
+
+        {/* Status Messages */}
+        <div id="statusMessage" className="mt-4 hidden"></div>
       </div>
+
+      {/* Records Table View */}
+      {records.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            <i className="fas fa-table mr-2 text-blue-500"></i>
+            Enregistrements en cours ({records.length})
+          </h2>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DRIC</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">District</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SST/PS</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nature Intervention</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opérateur</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {records.map((record, index) => (
+                  <tr key={record.id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.date || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.dric || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.district || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.sst_ps || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.nature_intervention || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.operator || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => editRecord(index)}
+                          className="text-blue-600 hover:text-blue-900 transition"
+                          title="Modifier"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          onClick={() => deleteRecord(index)}
+                          className="text-red-600 hover:text-red-900 transition"
+                          title="Supprimer"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
