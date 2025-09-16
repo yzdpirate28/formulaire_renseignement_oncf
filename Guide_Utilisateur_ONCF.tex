@@ -1,0 +1,561 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+% Dossier par défaut pour les images (créez un dossier `images/` et ajoutez vos captures)
+\graphicspath{{images/}}
+\usepackage{xcolor}
+\usepackage{framed}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{float}
+
+% Configuration de la page
+\geometry{left=2.5cm,right=2.5cm,top=3cm,bottom=3cm}
+
+% Configuration des couleurs ONCF
+\definecolor{oncf-orange}{RGB}{252,106,0}
+\definecolor{oncf-blue}{RGB}{0,102,153}
+\definecolor{oncf-dark-blue}{RGB}{0,51,102}
+
+% Configuration des en-têtes et pieds de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{oncf-orange}\leaders\hrule height \headrulewidth\hfill}}
+
+% Configuration des titres
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries\color{oncf-dark-blue}}
+{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\titleformat{\section}
+{\normalfont\Large\bfseries\color{oncf-blue}}
+{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\normalfont\large\bfseries\color{oncf-orange}}
+{\thesubsection}{1em}{}
+
+% Configuration des listes
+\setlist[itemize]{leftmargin=2em}
+\setlist[enumerate]{leftmargin=2em}
+
+% Configuration des liens
+\hypersetup{
+    colorlinks=true,
+    linkcolor=oncf-blue,
+    urlcolor=oncf-orange,
+    citecolor=oncf-dark-blue
+}
+
+% Macro générique pour insérer une capture d'écran
+% Usage : \screenshot[<largeur optionnelle>]{<fichier>}{<légende>}
+\newcommand{\screenshot}[3][]{%
+\begin{figure}[H]
+\centering
+\includegraphics[width=\ifx\relax#1\relax0.85\textwidth\else#1\fi]{#2}
+\caption{#3}
+\end{figure}
+}
+
+\begin{document}
+
+% Page de titre
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    % Logo ONCF (espace réservé)
+    \centering
+   \includegraphics[width=10cm]{logo-oncf.png.png}
+    
+    \vspace{2cm}
+    
+    {\Huge\bfseries\color{oncf-dark-blue} Guide Utilisateur}\\[0.5cm]
+    {\LARGE\bfseries\color{oncf-orange} Application de Gestion des Interventions}\\[0.3cm]
+    {\Large\bfseries\color{oncf-blue} Maintenance Ferroviaire ONCF}\\[2cm]
+    
+    \vspace{2cm}
+    
+    \begin{minipage}{0.8\textwidth}
+        \centering
+        \textbf{Application:} Formulaire de Renseignement ONCF\\
+        \vspace{1cm}
+        
+        \textbf{Ressources:}\\
+        \href{https://github.com/yzdpirate28/formulaire_renseignement_oncf}{GitHub Repository}\\
+        \href{https://formulaire-renseignement-oncf.vercel.app/}{Site Web Live}
+    \end{minipage}
+    
+    \vfill
+    
+    {\large\itshape Office National des Chemins de Fer du Maroc}
+\end{titlepage}
+
+% Table des matières
+\tableofcontents
+\newpage
+
+% Introduction
+\chapter{Introduction}
+
+\section{Présentation de l'application}
+
+L'application de gestion des interventions ONCF est une solution web moderne développée pour faciliter la saisie, le suivi et l'exportation des interventions techniques de maintenance ferroviaire. Cette application permet aux équipes techniques de l'ONCF de gérer efficacement deux types principaux d'interventions :
+
+\begin{itemize}
+    \item \textbf{Interventions Caténaire} : Maintenance et réparation des systèmes de caténaire
+    \item \textbf{Interventions Sous-Station} : Maintenance des équipements de sous-station électrique
+\end{itemize}
+
+\section{Objectifs de l'application}
+
+Cette application vise à :
+
+\begin{enumerate}
+    \item \textbf{Standardiser} la saisie des données d'intervention
+    \item \textbf{Automatiser} l'exportation des données vers Excel
+    \item \textbf{Centraliser} la gestion des interventions techniques
+    \item \textbf{Améliorer} le suivi et la traçabilité des travaux
+    \item \textbf{Faciliter} la génération de rapports
+\end{enumerate}
+
+\section{Technologies utilisées}
+
+L'application est développée avec les technologies suivantes :
+
+\begin{itemize}
+    \item \textbf{Frontend} : React 19.1.0 avec Vite
+    \item \textbf{Routing} : React Router DOM 7.7.1
+    \item \textbf{Styling} : Tailwind CSS
+    \item \textbf{Export Excel} : ExcelJS 4.4.0 et FileSaver
+    \item \textbf{Backend} : Google Apps Script (Google Sheets)
+    \item \textbf{Déploiement} : Vercel
+\end{itemize}
+
+% Accès au site
+
+% Expérience utilisateur pas à pas
+\chapter{Expérience utilisateur pas à pas}
+
+\section{Arrivée sur la page d'accueil}
+
+Lorsque l'utilisateur accède à l'application, il arrive sur une page d'accueil moderne et professionnelle présentant :
+
+\subsection{Éléments visuels}
+\begin{itemize}
+    \item \textbf{Arrière-plan} : Image de maintenance ferroviaire avec dégradé ONCF
+    \item \textbf{Logo ONCF} : Affiché en haut de la page
+    \item \textbf{Titre principal} : "Maintenance de Pointe pour vos Trains"
+    \item \textbf{Description} : Texte explicatif sur l'expertise technique ONCF
+\end{itemize}
+
+\subsection{Boutons d'action principaux}
+Trois boutons d'action sont disponibles :
+
+\begin{enumerate}
+    \item \textbf{"Renseignement Caténaire"} : Accès au formulaire d'interventions caténaire
+    \item \textbf{"Renseignement Sous Station"} : Accès au formulaire d'interventions sous-station
+    \item \textbf{"Voir les interventions"} : Consultation des interventions enregistrées
+\end{enumerate}
+
+\screenshot{acceuil.png}{Capture d'écran - Page d'accueil avec boutons d'action}
+
+\section{Navigation vers les formulaires}
+
+\subsection{Accès au formulaire Caténaire}
+\begin{enumerate}
+    \item Cliquer sur le bouton "Renseignement Caténaire"
+    \item Redirection vers la page \texttt{/form}
+    \item Affichage du formulaire complet avec toutes les sections
+\end{enumerate}
+
+
+\screenshot{nav_cat.png}{Capture d'écran - Navigation entre les formulaires}
+
+\subsection{Accès au formulaire Sous-Station}
+\begin{enumerate}
+    \item Cliquer sur le bouton "Renseignement Sous Station"
+    \item Redirection vers la page \texttt{/form-sous-station}
+    \item Affichage du formulaire spécialisé pour les sous-stations
+\end{enumerate}
+
+\screenshot{nav_ss.png}{Capture d'écran - Navigation entre les formulaires}
+
+\section{Consultation des interventions}
+
+\subsection{Accès au tableau de bord}
+\begin{enumerate}
+    \item Cliquer sur "Voir les interventions"
+    \item Redirection vers la page \texttt{/display}
+    \item Affichage du tableau de bord avec onglets
+\end{enumerate}
+
+\subsection{Fonctionnalités du tableau de bord}
+\begin{itemize}
+    \item \textbf{Onglets} : Séparation entre interventions Caténaire et Sous-Station
+    \item \textbf{Tableau de données} : Affichage de toutes les interventions
+    \item \textbf{Boutons d'action} : Ajouter, Exporter, Rafraîchir
+    \item \textbf{Export Excel} : Génération de fichiers Excel
+\end{itemize}
+
+\screenshot{dashboard.png}{Capture d'écran - Tableau de bord des interventions}
+
+% Présentation du formulaire
+\chapter{Présentation du formulaire}
+
+\section{Formulaire Caténaire}
+
+Le formulaire caténaire est organisé en plusieurs sections logiques pour faciliter la saisie des données.
+
+\subsection{Section Informations Générales}
+
+Cette section contient les champs de base de l'intervention :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{8cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Date & Date de l'intervention (format jj/mm/aaaa) & Texte avec formatage automatique \\
+\hline
+DRIC & Direction Régionale (SUD, NORD, CENTRE) & Liste déroulante \\
+\hline
+DT & District Technique (CAT101, LC111, etc.) & Liste déroulante \\
+\hline
+UP & Unité de Production & Liste déroulante \\
+\hline
+Section & Section géographique (villes marocaines) & Liste déroulante \\
+\hline
+Voie & Numéro de voie & Texte libre \\
+\hline
+Doc & Référence documentaire & Texte libre \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{for_cat.png}{Capture d'écran - Section Informations Générales}
+
+\subsection{Section Localisation}
+
+Cette section précise la localisation géographique des travaux :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{8cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+PK Début & Point kilométrique de début (km) & Texte avec format décimal \\
+\hline
+PK Fin & Point kilométrique de fin (km) & Texte avec format décimal \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{localisation.png}{Capture d'écran - Section Localisation}
+
+\subsection{Section Planification Horaire}
+
+Cette section gère la planification temporelle des interventions :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{7cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Heure Début Prévu & Heure prévue de début des travaux & Sélecteur d'heure \\
+\hline
+Heure Fin Prévu & Heure prévue de fin des travaux & Sélecteur d'heure \\
+\hline
+Heure Début Acc & Heure effective de début & Sélecteur d'heure \\
+\hline
+Heure Fin Acc & Heure effective de fin & Sélecteur d'heure \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{cat_horaire.png}{Capture d'écran - Section Planification Horaire}
+
+\subsection{Section Détails des Travaux}
+
+Cette section détaille la nature et l'exécution des travaux :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{8cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Nature des travaux & Type d'intervention (VSP, Révision, etc.) & Liste déroulante \\
+\hline
+Engin exploité & Matériel utilisé (VMT, DLC, etc.) & Liste déroulante \\
+\hline
+Description des travaux & Description détaillée & Zone de texte \\
+\hline
+Chargé de consignation & Responsable de la consignation & Texte libre \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{travaux_cat.png}{Capture d'écran - Section Détails des Travaux}
+
+\section{Formulaire Sous-Station}
+
+Le formulaire sous-station suit une structure similaire mais adaptée aux spécificités des interventions électriques.
+
+\subsection{Section Informations Générales}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{8cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Date & Date de l'intervention & Texte avec formatage \\
+\hline
+DRIC & Direction Régionale & Liste déroulante \\
+\hline
+District & District électrique (SS101, SS111, etc.) & Liste déroulante \\
+\hline
+SST/PS & Sous-station ou Poste de Section & Texte libre \\
+\hline
+Type intervention & SST ou Télécommande & Liste déroulante \\
+\hline
+Équipements & Équipements concernés & Texte libre \\
+\hline
+Chargé exploitation & Responsable d'exploitation & Texte libre \\
+\hline
+Doc & Référence documentaire & Texte libre \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{for_ss.jpeg}{Capture d'écran - Formulaire Sous-Station - Informations Générales}
+
+\subsection{Section Horaires et Délais}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{4cm}|p{7cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Heure d'entrée & Heure d'arrivée sur site & Sélecteur d'heure \\
+\hline
+Heure de sortie & Heure de départ du site & Sélecteur d'heure \\
+\hline
+Délai (Accès) & Délai d'accès aux sites & Texte libre \\
+\hline
+Heure Début travaux & Début effectif des travaux & Sélecteur d'heure \\
+\hline
+Heure Fin travaux & Fin effective des travaux & Sélecteur d'heure \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{ss_horaire.png}{Capture d'écran - Formulaire Sous-Station - Horaires}
+
+\subsection{Section Détails de l'intervention}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{8cm}|p{3cm}|}
+\hline
+\textbf{Champ} & \textbf{Description} & \textbf{Type} \\
+\hline
+Nature intervention & VL1, VL2, VG, TS, M CORR, INSPECTION & Liste déroulante \\
+\hline
+Consistance travaux & Description détaillée des travaux & Zone de texte \\
+\hline
+\end{tabular}
+\end{table}
+
+\screenshot{ss_travaux.png}{Capture d'écran - Formulaire Sous-Station - Détails}
+
+\section{Boutons d'action}
+
+Chaque formulaire dispose de boutons d'action pour gérer les données :
+
+\subsection{Formulaire Caténaire}
+\begin{itemize}
+    \item \textbf{Ajouter/Mettre à jour} : Sauvegarde l'enregistrement
+    \item \textbf{Réinitialiser} : Vide tous les champs
+    \item \textbf{Sauvegarder Excel} : Exporte tous les enregistrements
+    \item \textbf{Effacer Tout} : Supprime tous les enregistrements
+\end{itemize}
+
+\subsection{Formulaire Sous-Station}
+\begin{itemize}
+    \item \textbf{Ajouter/Mettre à jour} : Sauvegarde l'enregistrement
+    \item \textbf{Réinitialiser} : Vide tous les champs
+    \item \textbf{Sauvegarder Excel} : Exporte tous les enregistrements
+    \item \textbf{Effacer Tout} : Supprime tous les enregistrements
+\end{itemize}
+
+Après avoir clique sur le bouton "ajouter" , il vous demande votre nom 
+
+\screenshot{nom_operateur.png}{Capture d'écran - demande du nom de l'opérateur}
+
+puis une confirmation que l'enregistrement est ajoutée
+
+\screenshot{ajout_affichage.png}{Capture d'écran - ajout au enregistrement en cours}
+
+% Bonnes pratiques
+\chapter{Bonnes pratiques}
+
+\section{Saisie des données}
+
+\subsection{Formatage automatique}
+\begin{itemize}
+    \item \textbf{Dates} : Le formatage automatique ajoute les "/" lors de la saisie
+    \item \textbf{Heures} : Utilisation des sélecteurs d'heure pour éviter les erreurs
+    \item \textbf{Validation} : Champs obligatoires signalés par des alertes
+\end{itemize}
+
+
+\section{Gestion des enregistrements}
+
+\subsection{Sauvegarde locale}
+\begin{itemize}
+    \item Les données sont sauvegardées dans le navigateur (localStorage)
+    \item Persistance entre les sessions
+    \item Possibilité de modification et suppression
+\end{itemize}
+
+\subsection{Export Excel}
+\begin{itemize}
+    \item Génération automatique de fichiers Excel
+    \item Formatage professionnel avec tableaux
+    \item Nom de fichier avec date automatique
+\end{itemize}
+
+\screenshot{export-success.png}{Capture d'écran - Export Excel réussi}
+
+\section{Tableau de bord}
+
+\subsection{Consultation des données}
+\begin{itemize}
+    \item Affichage en temps réel des interventions
+    \item Séparation par type (Caténaire/Sous-Station)
+    \item Tri et filtrage automatique
+\end{itemize}
+
+
+
+\section{Conseils d'utilisation}
+
+\subsection{Avant de commencer}
+\begin{enumerate}
+    \item Vérifier la connexion Internet
+    \item Préparer toutes les informations nécessaires
+    \item S'assurer d'avoir les droits d'accès appropriés
+\end{enumerate}
+
+\subsection{Pendant la saisie}
+\begin{enumerate}
+    \item Remplir les champs obligatoires en premier
+    \item Utiliser les listes déroulantes quand disponibles
+    \item Vérifier la cohérence des données saisies
+\end{enumerate}
+
+\subsection{Après la saisie}
+\begin{enumerate}
+    \item Sauvegarder régulièrement les données
+    \item Exporter les fichiers Excel pour archivage
+    \item Vérifier l'intégrité des données exportées
+\end{enumerate}
+
+% Support
+\chapter{Support}
+
+\section{Problèmes courants}
+
+\subsection{Problèmes de connexion}
+\begin{itemize}
+    \item \textbf{Symptôme} : Page ne se charge pas
+    \item \textbf{Cause} : Problème de connexion Internet
+    \item \textbf{Solution} : Vérifier la connexion et réessayer
+\end{itemize}
+
+\subsection{Problèmes de sauvegarde}
+\begin{itemize}
+    \item \textbf{Symptôme} : Données non sauvegardées
+    \item \textbf{Cause} : Stockage local du navigateur plein
+    \item \textbf{Solution} : Vider le cache du navigateur
+\end{itemize}
+
+\subsection{Problèmes d'export}
+\begin{itemize}
+    \item \textbf{Symptôme} : Fichier Excel ne se télécharge pas
+    \item \textbf{Cause} : Bloqueur de pop-ups activé
+    \item \textbf{Solution} : Autoriser les téléchargements pour le site
+\end{itemize}
+
+\section{Contact et assistance}
+
+\subsection{Ressources en ligne}
+\begin{itemize}
+    \item \textbf{Code source} : \url{https://github.com/yzdpirate28/formulaire_renseignement_oncf}
+    \item \textbf{Application live} : \url{https://formulaire-renseignement-oncf.vercel.app/}
+\end{itemize}
+
+\subsection{Support technique}
+Pour toute assistance technique ou signalement de problème :
+
+\begin{enumerate}
+    \item Consulter la documentation GitHub
+    \item Vérifier les issues existantes
+    \item Créer une nouvelle issue si nécessaire
+    \item Contacter l'équipe de développement
+\end{enumerate}
+
+\section{Évolutions futures}
+
+\subsection{Fonctionnalités prévues}
+\begin{itemize}
+    \item Amélioration de l'interface utilisateur
+    \item Ajout de nouveaux types d'interventions
+    \item Intégration avec d'autres systèmes ONCF
+    \item Optimisation des performances
+\end{itemize}
+
+\subsection{Maintenance}
+\begin{itemize}
+    \item Mises à jour régulières de sécurité
+    \item Amélioration continue des fonctionnalités
+    \item Support technique permanent
+    \item Formation des utilisateurs
+\end{itemize}
+
+% Conclusion
+\chapter{Conclusion}
+
+Cette application de gestion des interventions ONCF représente une solution moderne et efficace pour la maintenance ferroviaire. Elle offre :
+
+\begin{itemize}
+    \item Une interface utilisateur intuitive et professionnelle
+    \item Des formulaires adaptés aux besoins spécifiques de l'ONCF
+    \item Une gestion centralisée des données d'intervention
+    \item Des fonctionnalités d'export et de reporting avancées
+    \item Une architecture technique robuste et évolutive
+\end{itemize}
+
+L'application facilite le travail quotidien des équipes techniques tout en garantissant la traçabilité et la qualité des données de maintenance ferroviaire.
+
+Pour toute question ou suggestion d'amélioration, n'hésitez pas à consulter les ressources de support mentionnées dans ce guide.
+
+\end{document}
