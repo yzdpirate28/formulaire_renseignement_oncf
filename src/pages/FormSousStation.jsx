@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 function FormSousStation() {
   const [formData, setFormData] = useState({
@@ -22,7 +24,30 @@ function FormSousStation() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Auto-format date input
+    if (name === 'date') {
+      let formattedValue = value.replace(/\D/g, ''); // Remove non-digits
+      
+      // Add "/" after day (2 digits)
+      if (formattedValue.length >= 2) {
+        formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
+      }
+      
+      // Add "/" after month (4 digits total: jj/mm)
+      if (formattedValue.length >= 5) {
+        formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(5, 9);
+      }
+      
+      // Limit to jj/mm/aaaa format
+      if (formattedValue.length > 10) {
+        formattedValue = formattedValue.substring(0, 10);
+      }
+      
+      setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const resetForm = () => {
@@ -46,10 +71,88 @@ function FormSousStation() {
     alert('Formulaire réinitialisé!');
   };
 
+  const saveToExcel = async () => {
+    try {
+      // Create Excel workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Renseignement Sous Station');
+      
+      // Prepare data for table creation
+      const headers = [
+        'Date', 'DRIC', 'District', 'SST/PS', 'Type Intervention', 'Équipements',
+        'Chargé Exploitation', 'Doc', 'Heure Entrée', 'Heure Sortie', 'Délai Accès',
+        'Heure Début Travaux', 'Heure Fin Travaux', 'Nature Intervention', 'Consistance Travaux'
+      ];
+      
+      // Add headers
+      worksheet.addRow(headers);
+      
+      // Add data row
+      const row = [
+        formData.date || '',
+        formData.dric || '',
+        formData.district || '',
+        formData.sst_ps || '',
+        formData.type_intervention || '',
+        formData.equipements || '',
+        formData.charge_exploitation || '',
+        formData.doc || '',
+        formData.heure_entree || '',
+        formData.heure_sortie || '',
+        formData.delai_acces || '',
+        formData.heure_debut_travaux || '',
+        formData.heure_fin_travaux || '',
+        formData.nature_intervention || '',
+        formData.consistance_travaux || ''
+      ];
+      worksheet.addRow(row);
+
+      // Create Excel table
+      const lastRow = 2; // Header + 1 data row
+      const lastCol = headers.length;
+      const lastColLetter = String.fromCharCode(64 + lastCol);
+      
+      worksheet.addTable({
+        name: 'RenseignementSousStationTable',
+        ref: `A1:${lastColLetter}${lastRow}`,
+        headerRow: true,
+        totalsRow: false,
+        style: {
+          theme: 'TableStyleMedium9',
+          showRowStripes: true,
+        },
+        columns: headers.map(header => ({
+          name: header,
+          filterButton: true
+        }))
+      });
+      
+      // Set column widths
+      worksheet.columns = headers.map(header => ({
+        width: Math.max(header.length + 2, 15)
+      }));
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `Renseignement_SousStation_${timestamp}.xlsx`;
+
+      // Save file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      saveAs(blob, filename);
+
+      alert('Formulaire sauvegardé en fichier Excel!');
+      resetForm();
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert(`Erreur lors de la sauvegarde: ${error.message}`);
+    }
+  };
+
   const saveForm = () => {
-    // Ici, tu peux ajouter la logique d'envoi (Google Sheets, etc.)
-    alert('Données enregistrées!');
-    resetForm();
+    saveToExcel(); // Save to Excel file instead of Google Sheets
   };
 
   const natureOptions = [
@@ -84,7 +187,16 @@ function FormSousStation() {
               {/* Date */}
               <div className="space-y-2">
                 <label htmlFor="date" className="block text-sm font-semibold text-gray-700">Date</label>
-                <input type="date" id="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition duration-200" />
+                <input 
+                  type="text" 
+                  id="date" 
+                  name="date" 
+                  placeholder="jj/mm/aaaa"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  maxLength="10"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition duration-200" 
+                />
               </div>
               {/* DRIC */}
               <div className="space-y-2">

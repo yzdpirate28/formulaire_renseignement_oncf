@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import villesData from "../../Villes.json";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { Link } from 'react-router-dom';
 
 function Form() {
   const [villes, setVilles] = useState([]);
+  const [records, setRecords] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
   const [formData, setFormData] = useState({
     date: '',
     dric: '',
@@ -30,78 +32,175 @@ function Form() {
 
   useEffect(() => {
     setVilles(villesData);
+    // Load records from localStorage
+    const storedData = localStorage.getItem('catenaireRecords');
+    if (storedData) {
+      setRecords(JSON.parse(storedData));
+    }
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Auto-format date input
+    if (name === 'date') {
+      let formattedValue = value.replace(/\D/g, ''); // Remove non-digits
+      
+      // Add "/" after day (2 digits)
+      if (formattedValue.length >= 2) {
+        formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
+      }
+      
+      // Add "/" after month (4 digits total: jj/mm)
+      if (formattedValue.length >= 5) {
+        formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(5, 9);
+      }
+      
+      // Limit to jj/mm/aaaa format
+      if (formattedValue.length > 10) {
+        formattedValue = formattedValue.substring(0, 10);
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+    } else {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    }
   };
-const saveToGoogleSheets = async () => {
-  try {
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxYfQp5dp_UKeBzwBxwrmwCoNLBKU1VkmB6QqUjiMN5_7PDW9GNmWp77Q7IVNKtFIyc/exec";
-    
-    // Mode développement : ajoutez '/dev' à l'URL si vous testez en mode dev
-    // const scriptUrl = "https://script.google.com/macros/s/.../dev";
+const addRecord = () => {
+  if (!formData.date || !formData.dric) {
+    alert('Veuillez remplir au moins la Date et le DRIC');
+    return;
+  }
 
-    const response = await fetch(scriptUrl, {
-      method: 'POST',
-      mode: 'no-cors', // Important pour contourner les problèmes CORS
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
+  const newRecord = {
+    ...formData,
+    id: Date.now(),
+    timestamp: new Date().toLocaleString('fr-FR'),
+    operator: prompt('Nom de l\'opérateur:') || 'Non spécifié'
+  };
 
-    // En mode no-cors, vous ne pourrez pas lire la réponse
-    alert('Données envoyées au serveur!');
-    setFormData({
-        date: "",
-        dric: "",
-        dt: "",
-        up: "",
-        section: "",
-        voie: "",
-        doc: "",
-        pk_debut: "",
-        pk_fin: "",
-        heure_debut_prevu: "",
-        heure_fin_prevu: "",
-        delai_prevu: "",
-        heure_debut_acc: "",
-        heure_fin_acc: "",
-        nature_travaux: "",
-        engin_exploite: "",
-        description_travaux: "",
-        charge_consignation: "",
-        date_renseignement: ""
-      });
-  } catch (error) {
-    console.error("Erreur:", error);
-    alert(`Erreur lors de l'envoi: ${error.message}`);
+  if (editingIndex !== null) {
+    // Update existing record
+    const updatedRecords = [...records];
+    updatedRecords[editingIndex] = newRecord;
+    setRecords(updatedRecords);
+    setEditingIndex(null);
+    alert('Enregistrement mis à jour!');
+  } else {
+    // Add new record
+    setRecords([...records, newRecord]);
+    alert('Enregistrement ajouté!');
+  }
+
+  // Save to localStorage
+  localStorage.setItem('catenaireRecords', JSON.stringify([...records, newRecord]));
+
+  // Reset form
+  resetForm();
+};
+
+const editRecord = (index) => {
+  const record = records[index];
+  setFormData(record);
+  setEditingIndex(index);
+  // Scroll to form
+  document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
+};
+
+const deleteRecord = (index) => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement?')) {
+    const updatedRecords = records.filter((_, i) => i !== index);
+    setRecords(updatedRecords);
+    localStorage.setItem('catenaireRecords', JSON.stringify(updatedRecords));
+    alert('Enregistrement supprimé!');
   }
 };
 
-const saveForm = () => {
-  console.log("Formulaire enregistré", formData);
-  saveToGoogleSheets(); // Appel de la nouvelle fonction
+const saveAllToExcel = async () => {
+  if (records.length === 0) {
+    alert('Aucun enregistrement à sauvegarder!');
+    return;
+  }
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Renseignement Caténaire');
+
+    const headers = [
+      'Date', 'DRIC', 'DT', 'UP', 'Section', 'Voie', 'Doc', 'PK Début', 'PK Fin',
+      'Heure Début Prévu', 'Heure Fin Prévu', 'Heure Début Acc', 'Heure Fin Acc',
+      'Nature Travaux', 'Engin Exploité', 'Description Travaux', 'Chargé Consignation',
+      'Opérateur', 'Date Soumission'
+    ];
+
+    // Build rows explicitly for the table (array of arrays)
+    const rows = records.map(record => ([
+      record.date || null,
+      record.dric || null,
+      record.dt || null,
+      record.up || null,
+      record.section || null,
+      record.voie || null,
+      record.doc || null,
+      record.pk_debut || null,
+      record.pk_fin || null,
+      record.heure_debut_prevu || null,
+      record.heure_fin_prevu || null,
+      record.heure_debut_acc || null,
+      record.heure_fin_acc || null,
+      record.nature_travaux || null,
+      record.engin_exploite || null,
+      record.description_travaux || null,
+      record.charge_consignation || null,
+      record.operator || null,
+      record.timestamp || null
+    ]));
+
+    // Create the table with explicit columns and rows starting at A1
+    worksheet.addTable({
+      name: 'RenseignementTable',
+      ref: 'A1',
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: 'TableStyleMedium9',
+        showRowStripes: true,
+      },
+      columns: headers.map(header => ({ name: header, filterButton: true })),
+      rows
+    });
+
+    // Optional: set column widths
+    worksheet.columns = headers.map(header => ({ width: Math.max(header.length + 2, 15) }));
+
+    const today = new Date().toISOString().slice(0, 10);
+    const filename = `Renseignement_Catenaire_${today}.xlsx`;
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, filename);
+
+    alert(`Excel sauvegardé! ${records.length} enregistrements exportés.`);
+  } catch (error) {
+    console.error('Erreur:', error);
+    alert(`Erreur lors de la sauvegarde: ${error.message}`);
+  }
 };
 
-const exportToExcel = () => {
-  const data = [formData];
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb, ws, "Formulaire");
-  
-  // Générer le fichier Excel
-  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'});
-  
-  // Télécharger avec FileSaver
-  saveAs(blob, "Formulaire_Renseignement.xlsx");
+const clearAllData = () => {
+  if (confirm('Êtes-vous sûr de vouloir effacer tous les enregistrements?')) {
+    setRecords([]);
+    localStorage.removeItem('catenaireRecords');
+    alert('Tous les enregistrements ont été effacés.');
+  }
 };
+
 
   const resetForm = () => {
     setFormData({
@@ -147,10 +246,16 @@ const exportToExcel = () => {
           <i className="fas fa-clipboard-list mr-3"></i>
           Formulaire de Renseignement Caténaire
         </h1>
+        <div className="text-center pb-4">
+          <span className="bg-white/20 px-4 py-2 rounded-full text-white">
+            <i className="fas fa-database mr-2"></i>
+            {records.length} enregistrement(s) en cours
+          </span>
+        </div>
       </div>
 
       {/* Form Container */}
-      <div className="bg-white rounded-b-2xl shadow-lg p-8">
+      <div id="form-section" className="bg-white rounded-b-2xl shadow-lg p-8">
         <form id="renseignementForm" className="space-y-6">
           {/* Section Informations Générales */}
           <div className="border-l-4 border-orange-500 pl-4 mb-8">
@@ -173,6 +278,7 @@ const exportToExcel = () => {
                   placeholder="jj/mm/aaaa"
                   value={formData.date}
                   onChange={handleInputChange}
+                  maxLength="10"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition duration-200"
                 />
               </div>
@@ -597,21 +703,38 @@ const exportToExcel = () => {
           <div className="flex flex-wrap gap-4 pt-8 border-t">
             <button 
               type="button" 
-              onClick={saveForm} 
+              onClick={addRecord} 
               className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition duration-200 font-semibold"
             >
-              <i className="fas fa-save mr-2"></i>
-              Enregistrer
+              <i className="fas fa-plus mr-2"></i>
+              {editingIndex !== null ? 'Mettre à jour' : 'Ajouter'}
             </button>
             
-            
             <button 
-              type="reset" 
+              type="button" 
               onClick={resetForm} 
               className="flex items-center px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition duration-200 font-semibold"
             >
               <i className="fas fa-undo mr-2"></i>
               Réinitialiser
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={saveAllToExcel} 
+              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition duration-200 font-semibold"
+            >
+              <i className="fas fa-file-excel mr-2"></i>
+              Sauvegarder Excel
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={clearAllData} 
+              className="flex items-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 transition duration-200 font-semibold"
+            >
+              <i className="fas fa-trash mr-2"></i>
+              Effacer Tout
             </button>
             
           </div>
@@ -620,6 +743,62 @@ const exportToExcel = () => {
         {/* Status Messages */}
         <div id="statusMessage" className="mt-4 hidden"></div>
       </div>
+
+      {/* Records Table View */}
+      {records.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg p-8 mt-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            <i className="fas fa-table mr-2 text-blue-500"></i>
+            Enregistrements en cours ({records.length})
+          </h2>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DRIC</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DT</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nature Travaux</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opérateur</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {records.map((record, index) => (
+                  <tr key={record.id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.date || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.dric || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.dt || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.section || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.nature_travaux || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{record.operator || '-'}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => editRecord(index)}
+                          className="text-blue-600 hover:text-blue-900 transition"
+                          title="Modifier"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          onClick={() => deleteRecord(index)}
+                          className="text-red-600 hover:text-red-900 transition"
+                          title="Supprimer"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
